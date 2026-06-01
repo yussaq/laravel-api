@@ -12,47 +12,46 @@ class UserController extends Controller
      * Display a listing of the resource.
      */
     public function index(Request $request)
-    {
-        $perPage = (int) $request->input('per_page', 10);
-        $search = $request->input('search');
-        $sortBy = $request->input('sort_by', 'id');
-        $sortDir = $request->input('sort_dir', 'desc');
-        $query = User::query();
+{
+    $query = User::query();
 
-        if ($search) {
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%");
-            });
-        }
-
-        $allowedSorts = [
-            'id',
-            'name',
-            'email',
-            'created_at'
-        ];
-
-        if (! in_array($sortBy, $allowedSorts)) {
-            $sortBy = 'id';
-        }
-
-        $query->orderBy($sortBy, $sortDir);
-
-        $users = $query->paginate($perPage);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Users fetched successfully',
-            'data' => $users->items(),
-            'meta' => [
-                'current_page' => $users->currentPage(),
-                'last_page' => $users->lastPage(),
-                'per_page' => $users->perPage(),
-                'total' => $users->total(),
-            ]
-        ]);
+    // Global Search
+    if ($search = $request->search) {
+        $query->where(function ($q) use ($search) {
+            $q->where('name', 'like', "%{$search}%")
+              ->orWhere('email', 'like', "%{$search}%");
+        });
     }
+
+    // Column Filters
+    foreach ($request->filters ?? [] as $field => $value) {
+        if ($value !== null && $value !== '') {
+            $query->where($field, 'like', "%{$value}%");
+        }
+    }
+
+    // Sorting
+    if ($request->sort_by) {
+        $query->orderBy(
+            $request->sort_by,
+            $request->sort_direction ?? 'asc'
+        );
+    }
+
+    $users = $query->paginate(
+        $request->per_page ?? 10
+    );
+
+    return response()->json([
+        'data' => $users->items(),
+        'meta' => [
+            'current_page' => $users->currentPage(),
+            'per_page'     => $users->perPage(),
+            'total'        => $users->total(),
+            'last_page'    => $users->lastPage(),
+        ],
+    ]);
+}
 
     /**
      * Show the form for creating a new resource.
