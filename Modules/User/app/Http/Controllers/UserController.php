@@ -14,6 +14,7 @@ class UserController extends Controller
     public function index(Request $request)
 {
     $query = User::query();
+    // sleep(1); // 1 detik delay untuk simulasi loading 
 
     // Global Search
     if ($search = $request->search) {
@@ -23,13 +24,31 @@ class UserController extends Controller
         });
     }
 
-    // Column Filters
-    foreach ($request->filters ?? [] as $field => $value) {
-        if ($value !== null && $value !== '') {
-            $query->where($field, 'like', "%{$value}%");
-        }
+$filters = request('filters', []);
+
+foreach ($filters as $field => $filter) {
+
+    $value = $filter['value'] ?? null;
+    $operator = $filter['operator'] ?? 'like';
+
+    if (empty($value)) {
+        continue;
     }
 
+    if ($operator === 'like') {
+        $query->where(
+            $field,
+            'like',
+            "%{$value}%"
+        );
+    } else {
+        $query->where(
+            $field,
+            $operator,
+            $value
+        );
+    }
+}
     // Sorting
     if ($request->sort_by) {
         $query->orderBy(
