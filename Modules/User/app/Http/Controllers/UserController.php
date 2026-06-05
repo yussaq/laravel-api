@@ -12,65 +12,129 @@ class UserController extends Controller
      * Display a listing of the resource.
      */
     public function index(Request $request)
-{
-    $query = User::query();
-    // sleep(1); // 1 detik delay untuk simulasi loading 
+    {
+        $query = User::query();
+        sleep(1); // 1 detik delay untuk simulasi loading 
 
-    // Global Search
-    if ($search = $request->search) {
-        $query->where(function ($q) use ($search) {
-            $q->where('name', 'like', "%{$search}%")
-              ->orWhere('email', 'like', "%{$search}%");
-        });
-    }
+        // Global Search
+        if ($search = $request->search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
 
-$filters = request('filters', []);
+        $filters = request('filters', []);
 
-foreach ($filters as $field => $filter) {
+        foreach ($filters as $field => $filter) {
 
-    $value = $filter['value'] ?? null;
-    $operator = $filter['operator'] ?? 'like';
+            $value = $filter['value'] ?? null;
+            $operator = $filter['operator'] ?? 'like';
 
-    if (empty($value)) {
-        continue;
-    }
+            if (empty($value)) {
+                continue;
+            }
 
-    if ($operator === 'like') {
-        $query->where(
-            $field,
-            'like',
-            "%{$value}%"
+            if ($operator === 'like') {
+                $query->where(
+                    $field,
+                    'like',
+                    "%{$value}%"
+                );
+            } else {
+                $query->where(
+                    $field,
+                    $operator,
+                    $value
+                );
+            }
+        }
+        // Sorting
+        if ($request->sort_by) {
+            $query->orderBy(
+                $request->sort_by,
+                $request->sort_direction ?? 'asc'
+            );
+        }
+
+        $users = $query->paginate(
+            $request->per_page ?? 10
         );
-    } else {
-        $query->where(
-            $field,
-            $operator,
-            $value
-        );
-    }
-}
-    // Sorting
-    if ($request->sort_by) {
-        $query->orderBy(
-            $request->sort_by,
-            $request->sort_direction ?? 'asc'
-        );
+
+        return response()->json([
+            'data' => $users->items(),
+            'meta' => [
+                'current_page' => $users->currentPage(),
+                'per_page'     => $users->perPage(),
+                'total'        => $users->total(),
+                'last_page'    => $users->lastPage(),
+            ],
+        ]);
     }
 
-    $users = $query->paginate(
-        $request->per_page ?? 10
-    );
+    /**
+     * Display a listing of the resource.
+     */
+    public function list(Request $request)
+    {
+        $query = User::query();
+        sleep(1); // 1 detik delay untuk simulasi loading 
 
-    return response()->json([
-        'data' => $users->items(),
-        'meta' => [
-            'current_page' => $users->currentPage(),
-            'per_page'     => $users->perPage(),
-            'total'        => $users->total(),
-            'last_page'    => $users->lastPage(),
-        ],
-    ]);
-}
+        // Global Search
+        if ($search = $request->search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        $filters = request('filters', []);
+
+        foreach ($filters as $field => $filter) {
+
+            $value = $filter['value'] ?? null;
+            $operator = $filter['operator'] ?? 'like';
+
+            if (empty($value)) {
+                continue;
+            }
+
+            if ($operator === 'like') {
+                $query->where(
+                    $field,
+                    'like',
+                    "%{$value}%"
+                );
+            } else {
+                $query->where(
+                    $field,
+                    $operator,
+                    $value
+                );
+            }
+        }
+        // Sorting
+        if ($request->sort_by) {
+            $query->orderBy(
+                $request->sort_by,
+                $request->sort_direction ?? 'asc'
+            );
+        }
+
+        $users = $query->paginate(
+            $request->per_page ?? 10
+        );
+
+        return response()->json([
+            'data' => $users->items(),
+            'meta' => [
+                'current_page' => $users->currentPage(),
+                'per_page'     => $users->perPage(),
+                'total'        => $users->total(),
+                'last_page'    => $users->lastPage(),
+            ],
+        ]);
+    }
 
     /**
      * Show the form for creating a new resource.

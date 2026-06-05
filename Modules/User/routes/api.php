@@ -9,6 +9,7 @@ use Modules\User\Http\Controllers\UserController;
 
 Route::middleware('auth:sanctum')->prefix('v1/users')->group(function () {
         Route::get('/', [UserController::class, 'index']);
+        Route::post('/list', [UserController::class, 'list']);
         Route::post('/', [UserController::class, 'store']);
         Route::get('/{user}', [UserController::class, 'show']);
         Route::put('/{user}', [UserController::class, 'update']);
